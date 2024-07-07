@@ -1,6 +1,11 @@
 const express = require('express');
+const cors = require('cors');
 const app = express();
 const port = 3000;
+
+app.use(cors({
+  origin: 'https://queryhelpdesk-frontend.vercel.app'
+}));
 
 app.get('/hello', (req, res) => {
   res.send('Hello World!');
