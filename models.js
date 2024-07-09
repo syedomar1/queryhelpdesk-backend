@@ -15,7 +15,7 @@ const userSchema = new mongoose.Schema({
 const User = mongoose.model('User', userSchema);
 
 const ticketSchema = new mongoose.Schema({
-  ticketNumber: String,
+  ticketNumber: Number,
   userName: String,
   issue: String,
   solution: String,
