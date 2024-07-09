@@ -73,7 +73,7 @@ app.post('/api/signup', async (req, res) => {
   const newUser = new User({ name, email, password: hashedPassword, username, role });
   await newUser.save();
   
-  res.status(201).json({ message: 'User registered successfully', role: newUser.role ,username: user.username});
+  res.status(201).json({ message: 'User registered successfully', role: newUser.role ,username: newUser.username});
 });
 
 app.get('/api/user', async (req, res) => {
