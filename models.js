@@ -18,6 +18,8 @@ const ticketSchema = new mongoose.Schema({
   ticketNumber: String,
   userName: String,
   issue: String,
+  solution: String,
+  updatedBy: String,  // New field to track who updated the issue
   status: { 
     type: String, 
     enum: ['Not Viewed', 'On Progress', 'Resolved'], 

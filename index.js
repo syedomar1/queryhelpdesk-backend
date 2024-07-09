@@ -38,24 +38,18 @@ app.post('/api/login', async (req, res) => {
 
   try {
     const user = await User.findOne({ email });
-    console.log(user); // Log user object to see if it exists
 
     if (!user) {
-      console.log(`No user found with email: ${email}`);
       return res.status(401).json({ message: 'Invalid credentials' });
     }
 
-    // Await the bcrypt.compare promise to resolve before logging and making a decision
     const isPasswordValid = await bcrypt.compare(password, user.password);
-    console.log(isPasswordValid); // Log the result of the password comparison
 
     if (!isPasswordValid) {
-      console.log('Password comparison failed');
       return res.status(401).json({ message: 'Invalid credentials' });
     }
 
-    console.log('Password comparison succeeded');
-    res.json({ message: 'Logged in successfully' });
+    res.json({ message: 'Logged in successfully' ,role:user.role,username: user.username});
   } catch (error) {
     console.error(`Error during login: ${error.message}`);
     res.status(500).json({ message: 'Internal server error' });
@@ -63,15 +57,23 @@ app.post('/api/login', async (req, res) => {
 });
 
 app.post('/api/signup', async (req, res) => {
-  const { name, email, password, role = 'user' } = req.body;
-  const userExists = await User.findOne({ email });
-  if (userExists) {
-    return res.status(400).json({ message: 'User already exists' });
+  const { name, email, password, username, role = 'user' } = req.body;
+  
+  const emailExists = await User.findOne({ email });
+  if (emailExists) {
+    return res.status(400).json({ message: 'User with this email already exists' });
   }
+
+  const usernameExists = await User.findOne({ username });
+  if (usernameExists) {
+    return res.status(400).json({ message: 'User with this username already exists' });
+  }
+
   const hashedPassword = await bcrypt.hash(password, 10);
-  const newUser = new User({ name, email, password: hashedPassword, role });
+  const newUser = new User({ name, email, password: hashedPassword, username, role });
   await newUser.save();
-  res.status(201).json({ message: 'User registered successfully' });
+  
+  res.status(201).json({ message: 'User registered successfully', role: newUser.role ,username: user.username});
 });
 
 app.get('/api/user', async (req, res) => {
@@ -91,15 +93,78 @@ app.get('/api/user', async (req, res) => {
 });
 
 app.post('/api/tickets', async (req, res) => {
-  const newTicket = new Ticket(req.body);
-  await newTicket.save();
-  res.status(201).send('Ticket created');
+  const { ticketNumber, userName, issue } = req.body;
+
+  // Ensure the ticketNumber and userName are provided
+  if (!ticketNumber || !userName || !issue) {
+    return res.status(400).json({ message: 'Missing required fields' });
+  }
+
+  try {
+    const newTicket = new Ticket({ ticketNumber, userName, issue });
+    await newTicket.save();
+    res.status(201).json(newTicket); // Respond with the created ticket
+  } catch (error) {
+    console.error('Error creating ticket:', error);
+    res.status(500).json({ message: 'Internal server error' });
+  }
 });
 
+
 app.get('/api/tickets', async (req, res) => {
-  const tickets = await Ticket.find();
-  res.json(tickets);
+  const { userName } = req.query;
+  try {
+    const query = userName ? { userName } : {};  // Filter by username if provided
+    const tickets = await Ticket.find(query);
+    res.json(tickets);
+  } catch (error) {
+    console.error('Error fetching tickets:', error);
+    res.status(500).json({ message: 'Internal server error' });
+  }
 });
+
+app.post('/api/tickets/delete', async (req, res) => {
+  const { userName, ticketNumber } = req.body;
+
+  if (!userName || !ticketNumber) {
+    return res.status(400).json({ message: 'Missing required fields' });
+  }
+
+  try {
+    await Ticket.deleteOne({ userName, ticketNumber });
+    res.status(200).json({ message: 'Ticket deleted successfully' });
+  } catch (error) {
+    console.error('Error deleting ticket:', error);
+    res.status(500).json({ message: 'Internal server error' });
+  }
+});
+
+app.post('/api/tickets/update', async (req, res) => {
+  const { ticketNumber, userName, solution, status, updatedBy } = req.body;
+
+  if (!ticketNumber || !userName || status === undefined || updatedBy === undefined) {
+    return res.status(400).json({ message: 'Missing required fields' });
+  }
+
+  try {
+    const ticket = await Ticket.findOne({ ticketNumber, userName });
+    if (!ticket) {
+      return res.status(404).json({ message: 'Ticket not found' });
+    }
+
+    ticket.solution = solution || ticket.solution;  // Update solution if provided
+    ticket.status = status;  // Update status
+    ticket.updatedBy = updatedBy;  // Track who updated the ticket
+    await ticket.save();
+
+    res.status(200).json({ message: 'Ticket updated successfully' });
+  } catch (error) {
+    console.error('Error updating ticket:', error);
+    res.status(500).json({ message: 'Internal server error' });
+  }
+});
+
+
 
 app.get('/', (req, res) => {
   res.send('Hello World!');
