@@ -57,7 +57,7 @@ app.post('/api/login', async (req, res) => {
 });
 
 app.post('/api/signup', async (req, res) => {
-  const { name, email, password, username, role = 'user' } = req.body;
+  const { name, email, password,cpassword, username, role = 'user' } = req.body;
   
   const emailExists = await User.findOne({ email });
   if (emailExists) {
@@ -68,7 +68,9 @@ app.post('/api/signup', async (req, res) => {
   if (usernameExists) {
     return res.status(400).json({ message: 'User with this username already exists' });
   }
-
+  if (password!=cpassword) {
+    return res.status(400).json({ message: 'Password and Confirm Password are not same! ' });
+  }
   const hashedPassword = await bcrypt.hash(password, 10);
   const newUser = new User({ name, email, password: hashedPassword, username, role });
   await newUser.save();
