@@ -27,6 +27,7 @@ app.use(cors({
     'http://localhost:3000',
     'http://localhost:3001',
     'https://queryhelpdesk-frontend.vercel.app',
+    `/\.vercel\.app$/`,
   ],
   optionsSuccessStatus: 200,
 }));
